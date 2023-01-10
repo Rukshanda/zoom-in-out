@@ -1,0 +1,29 @@
+export const INIT_SCALE = window.devicePixelRatio;
+export const SPACE_SUPPORT_GUIDE_LINE = 3 * INIT_SCALE;
+export const LINE_WIDTH = 2;
+export const FONT_SIZE = 11;
+export const WIDTH_RECT_RESIZE = 7 * INIT_SCALE;
+export const MIN_ZOOM = 0.05 * INIT_SCALE;
+export const SIZE_LINE_FRAME = 2;
+export const MAX_ZOOM = 400 * INIT_SCALE;
+export const COLOR_BORDER_HOVER_ELEMENT = "#8b46e5";
+export const COLOR_BORDER_HOVER_GROUP = "#0d8be6";
+export const BACKGROUND_COLOR = "#343434";
+export const BACKGROUND_COLOR_MENU = "#2c2c2c";
+export const FRAME_PIXEL_COLOR = "#AAAAAA";
+export const SCALE_VISIBLE_FRAME = 50 * INIT_SCALE;
+export const DESIGN_MODE = true;
+export const SIZE_GRID_SQUARE = 2;
+export const COLOR_NAME = "#979797";
+export const COLOR_NAME_FOCUS = "#7bc2f5";
+export const COLOR_NAME_HOVER = COLOR_NAME_FOCUS;
+export const COLOR_FILL_RECT_RESIZE = "#ffffff";
+export const COLOR_GUIDE_LINE = "#FF4747";
+export const COLOR_STROKE_RECT_RESIZE = COLOR_BORDER_HOVER_GROUP;
+export const LETTER_SPACING = 0.3;
+export const AUTO_SCROLL = 1 * INIT_SCALE;
+
+export const base64Point =
+  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAAAtBJREFUWEftVj1oGmEYfq4pNqW0tV6NaC2li2RpUUKGDoKik9ChP4OBCJ3cMoQQu0jVFgui6RUzCHYqEuiSFkrtIPgDDXQoNIEOwm1tCBrj0Vr6m/5ceeUOLlc1MZ5kyQuHHxz4Pu/zPO9zH4MDLuaA++MQgJIBOo8IguBmWfYVgL8Afku/Q1NKCeAIgFFBEKIGg2G+2WymjEbjPQDfJSDiMFAoAYwAOJnP530+n2+JmhWLxWcsyz52OBwFANsA/mgNQs3AaQDnRFF8xzAMotEoIpEINjY2Hlqt1rsAvgH4paUsag+cAnB+dXW1ODs7O1apVNoDp1Kp2tzcnLlerz8wm80xLWVRr+EJAJZarbY8NTV1SQZAIGQ2tJZFDWAUgInjuBt2u33B7Xb/J7nWsqgBHAVwNpvNXp+cnIw6HA5jN9PJsjQajQWTyaSUpS+fqgHQKuoBXBBF8S0ZsVfJbJRKpacejycI4Ku0LZQhe6pOHciIVp7nXwSDwYtKH3T6R5fLhXK53H7VarUSer3+jgRi3wDIiObNzc3lTCZzmaZUFjWkovWk89ra2pbFYqkVCoXFQCDwEsBHAD8A7Cm4OjFARhzjOO6m2ogy5dVqdT2Xyy3pdLrtWCz2BsAnAFsABACfB2WgqxFFUUQ4HL4fj8dfS01Jc4pqeuhMQfWzn8TsxEBHIyYSCWFiYqLi9XoXATRIcqkZRTSlI324KKr3RL0sazeb7zAiae33+9+Pj4/fArAuUU3TDvy17AZghxHJcMlk8nYoFHoOoAbgSz8091qHbgDaiZhOp6/NzMxwKysrT5xO5wKAD5L2RLsm1Q0AGZHN5XJXp6enHzEMcwVAXdKeDNeXzvthgIxIPjjD8/y8zWZLSftNK6bpnaBX1pIMxwEck4KFJqcV07R6AaAbkvzQ1AM7vhPy3a7lyvea6a4EshsATeneDwOHAA4ZGDoD/wA5GRIw+FAHtgAAAABJRU5ErkJggg==";
+
+export const specialCharsRegex = /[　 !@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/;
