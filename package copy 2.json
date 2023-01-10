@@ -1,0 +1,17 @@
+{
+  "name": "@slick-slider/slick",
+  "version": "1.0.1",
+  "private": false,
+  "license": "UNLICENSED",
+  "description": "react slick paginate, react slider paginate",
+  "main": "lib/commonjs/index.js",
+  "author": "SangLv <lsang2884@gmail.com>",
+  "homepage": "https://github.com/LeVinhSang1234/zoom-in-out.git",
+  "dependencies": {},
+  "scripts": {
+    "build": "rollup -c"
+  },
+  "files": ["lib"],
+  "devDependencies": {},
+  "keywords": ["react", "react slider paginate"]
+}
