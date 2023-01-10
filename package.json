@@ -1,0 +1,22 @@
+{
+  "name": "@react-scroll-inverted/react-scroll",
+  "version": "2.0.4",
+  "private": false,
+  "license": "UNLICENSED",
+  "description": "react scroll inverted",
+  "main": "lib/commonjs/index.js",
+  "types": "lib/commonjs/index.js",
+  "author": "SangLv <lsang2884@gmail.com>",
+  "homepage": "https://github.com/LeVinhSang1234/zoom-in-out/tree/feature/frame-chat",
+  "dependencies": {},
+  "scripts": {},
+  "files": [
+    "lib"
+  ],
+  "devDependencies": {},
+  "keywords": [
+    "react scroll inverted",
+    "react",
+    "scroll inverted"
+  ]
+}
