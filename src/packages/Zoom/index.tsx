@@ -285,6 +285,7 @@ class Zoom extends Component<ZoomProps> {
             transition: `transform ${animationDuration}ms`,
             width: "100%",
             height: "100%",
+            transformOrigin: 'center'
           }}
         >
           {children}
