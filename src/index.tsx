@@ -1,3 +1,3 @@
-import ScrollInverted from "./packages/ScrollInverted";
+import PDFHighlight from "./packages/PDFHighlight";
 
-export { ScrollInverted };
+export { PDFHighlight };

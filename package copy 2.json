@@ -1,16 +1,16 @@
 {
-  "name": "@react-scroll-inverted/react-scroll",
-  "version": "1.0.0",
+  "name": "@pdf-highlight/react-pdf-highlight",
+  "version": "1.0.1",
   "private": false,
   "license": "UNLICENSED",
-  "description": "react zoom in, zoom out",
+  "description": "react pdf highlight keyword",
   "main": "lib/commonjs/index.js",
   "types": "lib/commonjs/index.d.ts",
   "author": "SangLv <lsang2884@gmail.com>",
-  "homepage": "https://github.com/LeVinhSang1234/zoom-in-out/tree/feature/frame-chat",
+  "homepage": "https://github.com/LeVinhSang1234/zoom-in-out/tree/feature/hightlight-pdf",
   "dependencies": {},
   "scripts": {},
   "files": ["lib"],
   "devDependencies": {},
-  "keywords": ["react scroll inverted", "react", "scroll inverted"]
+  "keywords": ["react pdf highlight", "react", "pdf highlight"]
 }
