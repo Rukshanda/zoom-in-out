@@ -11,8 +11,6 @@ type Contents = {
 };
 
 type Props = {
-  cdnPDFJS?: string;
-  cdnWorkerPDFJS?: string;
   url?: string;
   width?: number | string;
   scale?: number;
@@ -27,22 +25,26 @@ type Props = {
   debug?: boolean;
   allowHtml?: boolean;
   extractLetterSpacing?: number;
+  specialWordRemoves?: string[];
 };
 
 type ValueFindObject = {
   objects: Contents[];
   begin: number;
-  endBegin: number;
   end: number;
+  matching: string;
 };
 
 const __DEV__ = !process.env.NODE_ENV || process.env.NODE_ENV === "development";
 
 const DEFAULT_CDN_PDFJS =
-  "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.189/pdf.min.mjs";
+  "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
 
 const DEFAULT_CDN_WORKER =
-  "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.189/pdf.worker.mjs";
+  "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+const DEFAULT_INTEGRITY =
+  "sha512-q+4liFwdPC/bNdhUpZx6aXDx/h77yEQtn4I1slHydcbZK34nLaR3cAeYSJshoxIOq3mjEf7xJE8YWIUHMn+oCQ==";
 
 class PDFHighlight extends Component<Props> {
   private remove?: () => void;
@@ -87,16 +89,7 @@ class PDFHighlight extends Component<Props> {
   };
 
   shouldComponentUpdate(nProps: Props): boolean {
-    const {
-      cdnPDFJS,
-      cdnWorkerPDFJS,
-      width,
-      keywords,
-      onStartLoad,
-      styleWrap,
-      debug,
-      url,
-    } = this.props;
+    const { width, keywords, onStartLoad, styleWrap, debug, url } = this.props;
     const keys: (keyof Props)[] = [
       "scale",
       "page",
@@ -104,16 +97,7 @@ class PDFHighlight extends Component<Props> {
       "isBorderHighlight",
       "colorHighlight",
     ];
-    if (
-      cdnPDFJS !== nProps.cdnPDFJS ||
-      cdnWorkerPDFJS !== nProps.cdnWorkerPDFJS
-    ) {
-      if (debug && __DEV__) {
-        console.info("Reload CDN");
-      }
-      this.remove?.();
-      this.appendScript(nProps);
-    } else if (url !== nProps.url) {
+    if (url !== nProps.url) {
       if (debug && __DEV__) {
         console.info(
           "Reload key change => ",
@@ -149,8 +133,7 @@ class PDFHighlight extends Component<Props> {
 
   private appendScript = async (props = this.props) => {
     let head = document.querySelector("head");
-    const { cdnPDFJS } = props;
-    const cdn = cdnPDFJS || DEFAULT_CDN_PDFJS;
+    const cdn = DEFAULT_CDN_PDFJS;
     if (!head) {
       head = document.createElement("head");
       document.querySelector("html")?.appendChild(head);
@@ -161,7 +144,9 @@ class PDFHighlight extends Component<Props> {
     }
     const script = document.createElement("script");
     script.src = cdn;
-    script.type = "module";
+    script.setAttribute("crossorigin", "anonymous");
+    script.setAttribute("integrity", DEFAULT_INTEGRITY);
+    script.setAttribute("referrerpolicy", "no-referrer");
     head.appendChild(script);
     script.onload = this.pdfLoaded;
     this.remove = () => head?.removeChild(script);
@@ -169,10 +154,12 @@ class PDFHighlight extends Component<Props> {
 
   private pdfLoaded = async () => {
     try {
-      this.initPdf();
+      await this.initPdf();
       await this.loadPDf();
       this.renderPage();
-    } catch {}
+    } catch (e: any) {
+      console.error(e.message || e);
+    }
   };
 
   private loadResize = () => {
@@ -188,11 +175,28 @@ class PDFHighlight extends Component<Props> {
     }, 100);
   };
 
-  private initPdf = () => {
-    const { pdfjsLib } = window.globalThis as any;
-    const { cdnWorkerPDFJS } = this.props;
-    pdfjsLib.GlobalWorkerOptions.workerSrc =
-      cdnWorkerPDFJS || DEFAULT_CDN_WORKER;
+  private initPdf = async () => {
+    let interval: NodeJS.Timeout;
+    let loop = 0;
+    return new Promise((res, rej) => {
+      let pdfjsLib = (window?.globalThis as any)?.pdfjsLib;
+      if (!pdfjsLib) {
+        interval = setInterval(() => {
+          loop++;
+          if ((window?.globalThis as any)?.pdfjsLib || loop === 60) {
+            pdfjsLib = (window?.globalThis as any)?.pdfjsLib;
+            if (pdfjsLib) {
+              pdfjsLib.GlobalWorkerOptions.workerSrc = DEFAULT_CDN_WORKER;
+              res(null);
+            } else rej("Browser loaded PDFJs Failed");
+            clearInterval(interval);
+          }
+        }, 100);
+      } else {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = DEFAULT_CDN_WORKER;
+        res(null);
+      }
+    });
   };
 
   private loadPDf = async (props = this.props) => {
@@ -206,7 +210,6 @@ class PDFHighlight extends Component<Props> {
   };
 
   private setPdf = (pdf: any, callback: (pdf: any) => void) => {
-    if (this.pdf) this.pdf.destroy();
     this.pdf = pdf;
     callback(pdf);
   };
@@ -218,13 +221,15 @@ class PDFHighlight extends Component<Props> {
     try {
       if (page) {
         const pagePdf = await this.pdf.getPage(page);
-        this.renderPdf(pagePdf, props, page);
+        await this.renderPdf(pagePdf, props, page);
       } else {
         const totalPages = this.pdf.numPages;
+        let promises = [];
         for (let i = 1; i <= totalPages; i++) {
           const pagePdf = await this.pdf.getPage(i);
-          await this.renderPdf(pagePdf, props, i);
+          promises.push(this.renderPdf(pagePdf, props, i));
         }
+        await Promise.all(promises);
       }
       onLoaded?.();
     } catch {
@@ -259,28 +264,8 @@ class PDFHighlight extends Component<Props> {
     if (newScale < scale) {
       newScale = scale;
     }
-    if (document.querySelector(`#${id}`)) {
-      const promiseAll = keywords.map(async (keyword, index) => {
-        if (keyword.length > 2000) {
-          console.warn(
-            "Keywords are too big: " + keyword.length + " characters"
-          );
-        }
-        return this.hightlightText(
-          pagePdf,
-          keyword,
-          (document.querySelector(`#${id}`) as HTMLCanvasElement).getContext(
-            "2d"
-          ) as CanvasRenderingContext2D,
-          {
-            ...size,
-            scale: newScale,
-          },
-          props
-        );
-      });
-      await Promise.all(promiseAll);
-    }
+    const exist = document.querySelector(`#${id}`);
+    if (exist) this.refCanvasWrap.removeChild(exist);
     this.refCanvasWrap.appendChild(div);
     viewport = pagePdf.getViewport({ scale: newScale });
     if (allowHtml) {
@@ -290,9 +275,9 @@ class PDFHighlight extends Component<Props> {
     canvas.height = viewport.height;
     canvas.width = viewport.width;
     const renderTask = await pagePdf.render({ canvasContext: ctx, viewport });
-    if (pageSearch && pageSearch !== page) return;
     await renderTask.promise;
-    const promiseAll = keywords.map(async (keyword, index) => {
+    if (pageSearch && pageSearch !== page) return;
+    const promiseAll = keywords.map(async (keyword) => {
       if (keyword.length > 2000) {
         console.warn("Keywords are too big: " + keyword.length + " characters");
       }
@@ -339,26 +324,31 @@ class PDFHighlight extends Component<Props> {
     str: string,
     scale: number,
     ctx: any,
-    spacing: number
+    spacing: number,
+    indexLoop: number
   ): number => {
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    if (isSafari || indexLoop > 500) return spacing;
     const { extractLetterSpacing = 0.1 } = this.props;
     ctx.save();
     ctx.letterSpacing = `${spacing * scale}px`;
     const { width: w } = ctx.measureText(str);
     ctx.restore();
     if (
-      Math.floor(w / scale) - 3 * scale <= Math.floor(width) &&
-      Math.floor(w / scale) + 3 * scale >= Math.floor(width)
+      Math.floor(w / scale) - 4 * scale <= Math.floor(width) &&
+      Math.floor(w / scale) + 4 * scale >= Math.floor(width)
     ) {
       return spacing;
     }
+    indexLoop++;
     if (Math.floor(w / scale) > Math.floor(width)) {
       return this.makeSpacing(
         width,
         str,
         scale,
         ctx,
-        spacing - extractLetterSpacing
+        spacing - extractLetterSpacing,
+        indexLoop
       );
     }
     return this.makeSpacing(
@@ -366,7 +356,8 @@ class PDFHighlight extends Component<Props> {
       str,
       scale,
       ctx,
-      spacing + extractLetterSpacing
+      spacing + extractLetterSpacing,
+      indexLoop
     );
   };
 
@@ -387,7 +378,8 @@ class PDFHighlight extends Component<Props> {
     const { colorHighlight = "yellow", isBorderHighlight } = props;
 
     let indexSub = indexBegin;
-    objects.forEach((object, index) => {
+    for (let index = 0; index < objects.length; index++) {
+      const object = objects[index];
       const str = object.str;
       const style = styles[object.fontName];
       ctx.save();
@@ -395,12 +387,14 @@ class PDFHighlight extends Component<Props> {
       ctx.font = `${object.transform[3] * viewport.scale}px ${
         style.fontFamily
       }`;
+      let indexLoop = 0;
       const spacing: number = this.makeSpacing(
         object.width,
         str,
         viewport.scale,
         ctx,
-        0
+        0.3,
+        indexLoop
       ) as number;
       (ctx as any).letterSpacing = `${spacing}px`;
       let w1 = 0;
@@ -448,113 +442,156 @@ class PDFHighlight extends Component<Props> {
       ctx.closePath();
       ctx.restore();
       indexSub += str.length;
-    });
+    }
     return;
   };
 
   private parseKeyword = (word: string) => {
-    return word.replace(/ |\n/g, " ").trim();
+    const { specialWordRemoves } = this.props;
+    let keyword = word.replace(/ |\n/g, " ").trim();
+    specialWordRemoves?.forEach((key) => {
+      keyword = keyword.replaceAll(key, " ");
+    });
+    return keyword;
   };
 
-  private checkEndsWith = (
-    keyword: string,
-    string: string,
-    i: number,
-    iLast: number
-  ): number => {
-    if (i >= keyword.length) {
-      if (string.includes(keyword)) return i;
-      return iLast;
-    }
-    const key = keyword.substring(0, i).trim();
-    if (!key || string.endsWith(key.trim())) {
-      return this.checkEndsWith(keyword, string, i + 1, i);
-    }
-    return this.checkEndsWith(keyword, string, i + 1, iLast);
+  private removeAllSpace = (word: string) => {
+    return word.replaceAll(" ", "");
   };
 
-  private checkStartsWith = (
-    keyword: string,
-    string: string,
-    i: number,
-    iLast: number
-  ): number => {
-    if (i >= keyword.length) {
-      if (string.includes(keyword)) return i;
-      return iLast;
+  private get_end_StrA_Is_start_StrB(strA: string, strB: string) {
+    let startIndex = -1;
+    let length = Math.min(strA.length, strB.length);
+    let longestCommon = "";
+    for (let i = length; i > 0; i--) {
+      const partOfString1 = strA.substring(strA.length - i);
+      if (
+        this.removeAllSpace(strB).startsWith(this.removeAllSpace(partOfString1))
+      ) {
+        startIndex = strA.length - i;
+        longestCommon = partOfString1;
+      }
     }
-    const key = keyword.substring(0, i).trim();
-    if (
-      !key ||
-      string.replaceAll(" ", "").startsWith(key.replaceAll(" ", ""))
-    ) {
-      return this.checkStartsWith(keyword, string, i + 1, i);
-    }
-    return this.checkStartsWith(keyword, string, i + 1, iLast);
-  };
+    return { longestCommon, startIndex };
+  }
 
-  private getIndexOfLast = (string: string, search: string) => {
-    var largestIndex = -1;
-    var currentIndex = string.indexOf(search);
-    while (currentIndex !== -1) {
-      largestIndex = currentIndex;
-      currentIndex = string.indexOf(search, currentIndex + 1);
+  private get_start_StrA_Is_start_StrB(strA: string, strB: string) {
+    let startIndex = -1;
+    let length = Math.min(strA.length, strB.length);
+    let longestCommon = "";
+    const strBTrim = this.removeAllSpace(strB);
+    for (let i = 1; i <= length; i++) {
+      const partOfString1 = strA.substring(0, i);
+      if (strBTrim.startsWith(this.removeAllSpace(partOfString1))) {
+        startIndex = i - partOfString1.length;
+        longestCommon = partOfString1;
+      }
     }
-    return largestIndex;
-  };
+    return { longestCommon, startIndex };
+  }
 
   private findObjects = (
     contents: Contents[],
     keyword: string
   ): ValueFindObject => {
-    const object = contents.find((e) => e.str.includes(keyword));
+    const { debug } = this.props;
+    let stringSearch = this.parseKeyword(keyword).substring(0, 5000);
+    const object = contents.find((e) => e.str.includes(stringSearch));
+    if (debug && __DEV__) {
+      console.log(
+        "------------------------------ INFO ------------------------------"
+      );
+      console.info(contents);
+    }
     if (object) {
-      const begin = this.getIndexOfLast(object.str, keyword);
+      const { startIndex, longestCommon } = this.get_end_StrA_Is_start_StrB(
+        this.parseKeyword(object.str),
+        stringSearch
+      );
+      if (debug && __DEV__) {
+        console.info("start matching => ", startIndex, "keyword => ", keyword);
+      }
       return {
         objects: [object],
-        begin,
-        end: keyword.length,
-        endBegin: keyword.length,
+        begin: startIndex,
+        end: longestCommon.length,
+        matching: keyword,
       };
     }
-    let stringSearch = this.parseKeyword(keyword).substring(0, 5000);
     let values: ValueFindObject = {
       objects: [],
       begin: -1,
       end: -1,
-      endBegin: -1,
+      matching: "",
     };
+
     for (let i = 0; i < contents.length; i++) {
       const str = this.parseKeyword(contents[i].str);
       if (!str.trim()) continue;
       if (!values.objects.length) {
-        const index = this.checkEndsWith(stringSearch, str, 0, -1);
-        if (index > 0) {
+        const { startIndex, longestCommon } = this.get_end_StrA_Is_start_StrB(
+          str,
+          stringSearch
+        );
+        if (startIndex > -1) {
           values.objects.push(contents[i]);
-          values.endBegin = index;
-          const stringSearchLast = stringSearch.substring(0, index).trim();
-          const indexOfLast = this.getIndexOfLast(str, stringSearchLast);
-          values.begin = indexOfLast;
-          stringSearch = stringSearch.substring(index, stringSearch.length);
+          values.begin = startIndex; //index start of object first
+          values.matching = longestCommon;
+          stringSearch = stringSearch
+            .trim()
+            .substring(str.length - startIndex, stringSearch.length);
+          if (debug && __DEV__) {
+            console.info(
+              "start matching => ",
+              startIndex,
+              "keyword => ",
+              longestCommon,
+              "object begin => ",
+              contents[i]
+            );
+          }
         }
         continue;
       }
       if (!stringSearch.trim()) break;
-      const indexStart = this.checkStartsWith(stringSearch, str, 0, 0);
-      if (indexStart <= 0) {
+      const { startIndex, longestCommon } = this.get_start_StrA_Is_start_StrB(
+        str,
+        stringSearch
+      );
+      if (startIndex > -1) {
+        values.objects.push(contents[i]);
+        values.matching += longestCommon;
+        stringSearch = stringSearch
+          .trim()
+          .substring(startIndex + longestCommon.length, stringSearch.length);
+        values.end = longestCommon.length; //index start of object last
+        if (debug && __DEV__) {
+          console.info(values.matching);
+        }
+      } else {
+        if (debug && __DEV__) {
+          if (debug && __DEV__) {
+            console.error(
+              "------------------------------ NOT MATCH ------------------------------"
+            );
+            console.log("string check", str);
+            console.log("string search", stringSearch);
+            console.error(
+              "------------------------------ NOT MATCH ------------------------------"
+            );
+          }
+        }
         values.objects = [];
         values.begin = -1;
         values.end = -1;
-        values.endBegin = -1;
+        values.matching = "";
         stringSearch = this.parseKeyword(keyword);
-        continue;
       }
-      values.end = indexStart;
-      values.objects.push(contents[i]);
-      stringSearch = stringSearch.substring(indexStart, stringSearch.length);
-      if (!stringSearch) {
-        break;
-      }
+    }
+    if (debug && __DEV__) {
+      console.log(
+        "------------------------------ INFO ------------------------------"
+      );
     }
     return values;
   };

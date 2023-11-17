@@ -1,9 +1,7 @@
-# Scroll Inverted
+# PDF Highlight => PDFJS version 3.11.174
 
 ```js
 type Props = {
-  cdnPDFJS?: string,
-  cdnWorkerPDFJS?: string,
   url?: string,
   width?: number | string,
   scale?: number,
@@ -17,6 +15,8 @@ type Props = {
   styleWrap?: CSSProperties,
   debug?: boolean,
   allowHtml?: boolean,
+  extractLetterSpacing?: number,
+  specialWordRemoves?: string[],
 };
 
 import { PDFHighlight } from "@pdf-highlight/react-pdf-highlight";

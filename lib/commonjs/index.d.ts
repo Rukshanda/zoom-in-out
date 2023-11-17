@@ -1,8 +1,6 @@
 declare module "@pdf-highlight/react-pdf-highlight" {
   import { Component, CSSProperties } from "react";
   type Props = {
-    cdnPDFJS?: string;
-    cdnWorkerPDFJS?: string;
     url?: string;
     width?: number | string;
     scale?: number;
@@ -17,6 +15,7 @@ declare module "@pdf-highlight/react-pdf-highlight" {
     debug?: boolean;
     allowHtml?: boolean;
     extractLetterSpacing?: number;
+    specialWordRemoves?: string[];
   };
 
   export class PDFHighlight extends Component<Props> {}
