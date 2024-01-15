@@ -1,143 +1,148 @@
 import { Component } from "react";
-import { clsx } from "../utils";
-import "./index.css";
+import { chunkArray, clsx, diffArray } from "../utils";
+import { MonthProps } from "..";
 
-const img = require("./backg.png");
-
-console.log("img", img);
-
-type MonthProps = {
-  month: number;
-  year: number;
-  className?: string;
-  shortDate?: string[];
-};
-
-const defaultShortDate = ["S", "M", "T", "W", "T", "F", "S"];
+const dSun = ["S", "M", "T", "W", "T", "F", "S"];
+const dMon = ["M", "T", "W", "T", "F", "S", "S"];
+const dMonthsLabel = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
 
 class Month extends Component<MonthProps> {
   refContainer?: HTMLDivElement | null;
+  dates: { day: number; year: number; month: number }[][];
+  dSDate: string[];
+  now: number[];
   constructor(props: MonthProps) {
     super(props);
-    this.getDaysOfMonth();
+    this.dSDate = props.isMondayStart ? dMon : dSun;
+    this.dates = this.getDaysOfMonth();
+    const now = new Date();
+    this.now = [now.getFullYear(), now.getMonth() + 1, now.getDate()];
   }
 
-  componentDidMount(): void {
-    this.initEffect();
+  shouldComponentUpdate(nProps: Readonly<MonthProps>): boolean {
+    const {
+      year,
+      month,
+      className,
+      shortLabelDate,
+      labelMonths,
+      isMondayStart,
+    } = this.props;
+    if (year !== nProps.year || month !== nProps.month) {
+      this.dates = this.getDaysOfMonth(nProps);
+    }
+    const shouldUpdate =
+      year !== nProps.year ||
+      month !== nProps.month ||
+      className !== nProps.className ||
+      isMondayStart !== nProps.isMondayStart ||
+      diffArray(shortLabelDate, nProps.shortLabelDate) ||
+      diffArray(labelMonths, nProps.labelMonths);
+    return shouldUpdate;
   }
 
-  initEffect = () => {
-    if (!this.refContainer) {
-      return;
-    }
+  private getDaysOfMonth = (props = this.props) => {
+    const { month, year, isMondayStart } = props;
+    const date = new Date(year, month, 0).getDate();
 
-    function onMouseLeave(e: MouseEvent) {
-      var tabl = e.currentTarget as HTMLDivElement;
-      tabl.style.backgroundPosition = "-10000px -10000px";
-    }
-    function onMouseMove(e: MouseEvent) {
-      var x = window.Event
-        ? e.pageX
-        : e.clientX +
-          (document.documentElement.scrollLeft
-            ? document.documentElement.scrollLeft
-            : document.body.scrollLeft);
-      var y = window.Event
-        ? e.pageY
-        : e.clientY +
-          (document.documentElement.scrollTop
-            ? document.documentElement.scrollTop
-            : document.body.scrollTop);
+    const nowAfter = new Date(year, month - 1, 1);
+    let appendAfter = nowAfter.getDay();
 
-      var tabl = e.currentTarget as HTMLDivElement;
-      x = x - size / 2 - tabl.getBoundingClientRect().left;
-      y = y - size / 2 - tabl.getBoundingClientRect().top;
-      tabl.style.backgroundPosition = x + "px" + " " + y + "px";
+    const nowBefore = new Date(year, month - 1, date);
+    let appendBefore = nowBefore.getDay();
+    let dates = [];
+    if (isMondayStart) {
+      appendBefore -= 1;
+      appendAfter -= 1;
     }
-
-    var size = 256;
-    this.refContainer.addEventListener("mouseleave", onMouseLeave);
-    this.refContainer.addEventListener("mousemove", onMouseMove);
-    this.refContainer.style.backgroundSize = size + "px";
-    this.refContainer.style.backgroundPosition = "-10000px -10000px";
+    if (appendAfter) {
+      const dateAfter = new Date(year, month - 1, 0).getDate();
+      for (let i = appendAfter - 1; i >= 0; i--) {
+        dates.push({
+          day: dateAfter - i,
+          year: nowAfter.getFullYear(),
+          month: nowAfter.getMonth() + 1,
+        });
+      }
+    }
+    for (let i = 1; i <= date; i++) {
+      dates.push({ day: i, year, month });
+    }
+    let divRemove = 6;
+    if (dates.length <= 34) {
+      divRemove = 13;
+    }
+    for (let i = 1; i <= divRemove - appendBefore; i++) {
+      dates.push({
+        day: i,
+        year: nowAfter.getFullYear(),
+        month: nowAfter.getMonth() + 1,
+      });
+    }
+    return chunkArray(dates, this.dSDate.length);
   };
 
-  getDaysOfMonth = () => {
-    const { month, year } = this.props;
-    const date = new Date(year, month, 0);
-    console.log("date", date.getDate());
+  private getShortLabelDate = () => {
+    const { shortLabelDate } = this.props;
+    if (!Array.isArray(shortLabelDate) || !shortLabelDate?.length) {
+      return this.dSDate;
+    }
+    return shortLabelDate;
+  };
+
+  private getLabelMonths = () => {
+    const { labelMonths } = this.props;
+    if (!Array.isArray(labelMonths) || !labelMonths?.length) {
+      return dMonthsLabel;
+    }
+    return labelMonths;
   };
 
   render() {
-    const { className, shortDate = defaultShortDate } = this.props;
+    const { className, month } = this.props;
     return (
-      <div className={clsx("month", className)}>
-        <table
-          className="winstyle"
-          ref={(ref) => (this.refContainer = ref)}
-          style={{ backgroundImage: `url(${img})` }}
-        >
-          <tbody>
-            <tr>
-              {shortDate.map((e) => (
-                <td>
-                  <div>{e}</div>
-                </td>
-              ))}
-            </tr>
-            <tr>
-              <td>
-                <div>6</div>
-              </td>
-              <td>
-                <div>7</div>
-              </td>
-              <td>
-                <div>8</div>
-              </td>
-              <td>
-                <div>9</div>
-              </td>
-              <td>
-                <div>10</div>
-              </td>
-            </tr>
-            <tr>
-              <td>
-                <div>11</div>
-              </td>
-              <td>
-                <div>12</div>
-              </td>
-              <td>
-                <div>13</div>
-              </td>
-              <td>
-                <div>14</div>
-              </td>
-              <td>
-                <div>15</div>
-              </td>
-            </tr>
-            <tr>
-              <td>
-                <div>16</div>
-              </td>
-              <td>
-                <div>17</div>
-              </td>
-              <td>
-                <div>18</div>
-              </td>
-              <td>
-                <div>19</div>
-              </td>
-              <td>
-                <div>20</div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+      <div className={clsx("calendar__month", className)}>
+        <div className="calendar__month__label">
+          {this.getLabelMonths()[month - 1]}
+        </div>
+        <div className="calendar__month__header">
+          {this.getShortLabelDate().map((d, i) => (
+            <div key={`${d}_${i}`}>{d}</div>
+          ))}
+        </div>
+
+        {this.dates.map((d, i) => (
+          <div key={`day_list_${i}`} className="calendar__month__days">
+            {d.map((dd, index) => (
+              <div key={`${dd.day}_${index}`}>
+                <div
+                  className={clsx(
+                    "calendar__month__day",
+                    this.now[0] === dd.year &&
+                      this.now[1] === dd.month &&
+                      this.now[2] === dd.day &&
+                      "calendar__month__day--today"
+                  )}
+                >
+                  {dd.day}
+                </div>
+              </div>
+            ))}
+          </div>
+        ))}
       </div>
     );
   }

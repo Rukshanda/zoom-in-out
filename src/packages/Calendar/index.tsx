@@ -1,18 +1,15 @@
 import { Component } from "react";
-import "./calendar.css";
 import { clsx } from "../utils";
-import Month from "../Month";
-
-type CalendarProps = {
-  className?: string;
-};
+import { CalendarProps } from "..";
+import Day from "../Day";
+import "../index.css";
 
 class Calendar extends Component<CalendarProps> {
   render() {
     const { className } = this.props;
     return (
       <div className={clsx("calendar", className)}>
-        <Month month={1} year={2024} />
+        <Day month={12} year={2024} day={1} />
       </div>
     );
   }
