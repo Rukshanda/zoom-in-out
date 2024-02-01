@@ -1,5 +1,4 @@
-# Scroll Inverted
-
+# Scroll Inverted 
 ```js
   type ScrollInvertedProps<T> = {
     classNameWrap?: string;
@@ -84,3 +83,4 @@ function App() {
 
 export default App;
 ```
+[Demo](https://github.com/LeVinhSang1234/zoom-in-out/assets/35788280/592d2954-035c-4389-b724-6b13013288f9)
