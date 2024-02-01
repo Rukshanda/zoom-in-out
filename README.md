@@ -31,3 +31,56 @@
     keyExtractor?: (item: T, index: number) => string | number;
   };
 ```
+
+```js
+import { Fragment, useRef, useState } from "react";
+import ScrollInverted from "./packages/ScrollInverted";
+
+function App() {
+  const [state1, setState1] = useState(
+    new Array(10).fill(null).map((_, i) => `${i + 1} Text`)
+  );
+
+  const refScroll = useRef < ScrollInverted < (typeof state1)[0] > null;
+
+  return (
+    <Fragment>
+      <div
+        style={{
+          width: "100%",
+          height: "100%",
+          display: "flex",
+          padding: "0 20px",
+        }}
+      >
+        <ScrollInverted
+          renderItem={({ item }) => (
+            <div>
+              <div style={{ paddingTop: 100, color: "red" }}>{item}</div>
+            </div>
+          )}
+          data={state1}
+          ref={refScroll}
+          onStartReached={() => {
+            console.log("onStartReached");
+          }}
+          keyExtractor={(item) => item}
+          onEndReached={() => {
+            console.log("onEndReached");
+          }}
+          onLayout={() => {
+            refScroll.current?.scrollToEnd("smooth");
+          }}
+        />
+      </div>
+      <button
+        onClick={() => setState1([...state1, `${state1.length + 1} Text`])}
+      >
+        add data
+      </button>
+    </Fragment>
+  );
+}
+
+export default App;
+```

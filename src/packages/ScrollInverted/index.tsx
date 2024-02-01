@@ -208,7 +208,7 @@ class ScrollInverted<T> extends PureComponent<ScrollInvertedProps<T>> {
     this.timeoutEnd = setTimeout(this.onScrollEndHandle, 100);
   };
 
-  beginFrameAnimated = () => {
+  private beginFrameAnimated = () => {
     if (!this.divScroll) return;
     const { scrollTop } = this.divScroll;
     if (scrollTop !== this.preScrollTop) {
@@ -260,15 +260,20 @@ class ScrollInverted<T> extends PureComponent<ScrollInvertedProps<T>> {
     this.divScroll.scrollTo(options);
   };
 
-  scrollToTop = (behavior?: ScrollBehavior) => {
+  scrollToEnd = (behavior?: ScrollBehavior) => {
     if (!this.divScroll) return;
     this.divScroll.scrollTo({ top: 0, behavior });
   };
 
-  scrollToEnd = (behavior?: ScrollBehavior) => {
+  scrollToTop = (behavior?: ScrollBehavior) => {
     if (!this.divScroll) return;
     const { scrollHeight } = this.divScroll;
     this.divScroll.scrollTo({ top: scrollHeight, behavior });
+  };
+
+  private getReverse = () => {
+    const { data = [] } = this.props;
+    return [...data].reverse();
   };
 
   render() {
@@ -280,7 +285,6 @@ class ScrollInverted<T> extends PureComponent<ScrollInvertedProps<T>> {
       styleWrap,
       classNameWrap,
       renderItem,
-      data = [],
       keyExtractor,
     } = this.props;
     return (
@@ -303,7 +307,7 @@ class ScrollInverted<T> extends PureComponent<ScrollInvertedProps<T>> {
             ref={(ref) => (this.divContentWrap = ref)}
           >
             <div ref={(ref) => (this.divContent = ref)}>
-              {data.map((item, index) => (
+              {this.getReverse().map((item, index) => (
                 <ItemRenderring key={keyExtractor?.(item, index) || index}>
                   {renderItem?.({ item, index })}
                 </ItemRenderring>

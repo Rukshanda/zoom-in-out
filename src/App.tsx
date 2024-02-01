@@ -1,25 +1,12 @@
-import { Fragment, useState } from "react";
+import { Fragment, useRef, useState } from "react";
 import ScrollInverted from "./packages/ScrollInverted";
 
 function App() {
-  const [state1, setState1] = useState([
-    {
-      items: ["12", "13", "14", "12", "13", "14", "12", "13", "14", "12"],
-      title: "20/09/2021",
-    },
-    {
-      items: ["12", "13", "14", "12", "13", "14", "12", "13", "14", "12"],
-      title: "21/09/2021",
-    },
-    {
-      items: ["12", "13", "14", "12", "13", "14", "12", "13", "14", "12"],
-      title: "22/09/2021",
-    },
-    {
-      items: ["12", "13", "14", "12", "13", "14", "12", "13", "14", "12"],
-      title: "23/09/2021",
-    },
-  ]);
+  const [state1, setState1] = useState(
+    new Array(10).fill(null).map((_, i) => `${i + 1} Text`)
+  );
+
+  const refScroll = useRef<ScrollInverted<(typeof state1)[0]>>(null);
 
   return (
     <Fragment>
@@ -28,68 +15,34 @@ function App() {
           width: "100%",
           height: "100%",
           display: "flex",
+          padding: "0 20px",
         }}
       >
         <ScrollInverted
           renderItem={({ item }) => (
             <div>
-              <div style={{ paddingTop: 100, color: "red" }}>{item.title}</div>
-              {item.items.map((e, i) => (
-                <div
-                  style={{ paddingBottom: 40 }}
-                  key={`${item.title}_${e}_${i}`}
-                >
-                  {e}
-                </div>
-              ))}
+              <div style={{ paddingTop: 100, color: "red" }}>{item}</div>
             </div>
           )}
           data={state1}
+          ref={refScroll}
           onStartReached={() => {
-            setState1([
-              ...state1,
-              {
-                title: "24/09/2021",
-                items: ["12", "13", "14", "12", "13", "14"],
-              },
-            ]);
+            console.log("onStartReached");
           }}
-          keyExtractor={(item) => item.title}
+          keyExtractor={(item) => item}
           onEndReached={() => {
-            setState1([
-              {
-                title: "30/09/2021",
-                items: ["12", "13", "14", "12", "13", "14"],
-              },
-              {
-                title: "29/09/2021",
-                items: ["12", "13", "14", "12", "13", "14"],
-              },
-              {
-                title: "28/09/2021",
-                items: ["12", "13", "14", "12", "13", "14"],
-              },
-              {
-                title: "27/09/2021",
-                items: ["12", "13", "14", "12", "13", "14"],
-              },
-              {
-                title: "26/09/2021",
-                items: ["12", "13", "14", "12", "13", "14"],
-              },
-              {
-                title: "25/09/2021",
-                items: ["12", "13", "14", "12", "13", "14"],
-              },
-              {
-                title: "24/09/2021",
-                items: ["12", "13", "14", "12", "13", "14"],
-              },
-              ...state1,
-            ]);
+            console.log("onEndReached");
+          }}
+          onLayout={() => {
+            refScroll.current?.scrollToEnd("smooth");
           }}
         />
       </div>
+      <button
+        onClick={() => setState1([...state1, `${state1.length + 1} Text`])}
+      >
+        add data
+      </button>
     </Fragment>
   );
 }
