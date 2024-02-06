@@ -102,12 +102,14 @@ class ScrollInverted<T> extends PureComponent<ScrollInvertedProps<T>> {
       transform: rotate(180deg);
       overflow: auto;
       position: relative;
+      display: flex;
     }
     
     .scroll-inverted-wrap > .scroll-inverted-container > .scroll-inverted-content {
       height: max-content;
       min-height: 100%;
       position: relative !important;
+      flex: 1;
     }
 
     .scroll-inverted-wrap > .scroll-inverted-container > .scroll-inverted-content {
