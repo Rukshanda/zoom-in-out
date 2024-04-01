@@ -1,10 +1,8 @@
 import { name } from "./name";
 import { ComponentApp } from "../types";
-import { makeScreen } from "../utlis";
 
 export const page = (ctx: CanvasRenderingContext2D, screen: ComponentApp) => {
-  const { x, y, width, height, cursor, backgroundColor, config } =
-    makeScreen(screen);
+  const { x, y, width, height, cursor, backgroundColor, config } = screen;
   const { lineWidth, initScale, colorBorderHoverGroup } = config;
 
   const isHover = cursor.inScreen();

@@ -51,13 +51,15 @@ export type ComponentApp = {
 
 export type Zoom = {
   scale: number;
-  worldOrigin: Pointer;
+  worldOrigin: Pointer; // translate x và translate y. sẽ bằng rx
   screenOrigin: Pointer;
   mouse: Pointer & {
-    rx: number;
-    ry: number;
+    rx: number; // vị trí chuột x sau khi bị scale và translate so với thực tế
+    ry: number; // vị trí chuột y sau khi bị scale và translate so với thực tế
     button: number;
     bounds?: DOMRect;
+    // x:  vị trí chuột x thực tế trên màn hình
+    // y: vị trí chuột y thực tế trên màn hình
   };
 };
 

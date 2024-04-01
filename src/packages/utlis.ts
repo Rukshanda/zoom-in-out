@@ -15,23 +15,27 @@ export const isHoved = (
   contain: { x: number; y: number },
   screen: ComponentApp
 ) => {
-  const { x: x1, y: y1, width: w1, height: h1 } = makeScreen(screen);
+  const { x: x1, y: y1, width: w1, height: h1 } = screen;
   const { x: x2, y: y2 } = contain;
   return x2 >= x1 && x2 <= x1 + w1 && y2 >= y1 && y2 <= y1 + h1;
 };
 
+//Scale width và height với Zoom. Width height của element draw trong canvas
 export const zoomed = (number: number, zoom: Zoom) => {
   const { scale } = zoom;
-  // just scale
   return number * scale;
 };
+
 // converts from world coord to screen pixel coord
+// biến đổi vị trí x ban đầu thành vị trí mới sau khi zoom
 export const zoomedX = (number: number, zoom: Zoom) => {
   const { worldOrigin, screenOrigin, scale } = zoom;
   // scale & origin X
   return (number - worldOrigin.x) * scale + screenOrigin.x;
 };
+
 // converts from world coord to screen pixel coord
+// biến đổi vị trí y ban đầu thành vị trí mới sau khi zoom
 export const zoomedY = (number: number, zoom: Zoom) => {
   const { worldOrigin, screenOrigin, scale } = zoom;
   // scale & origin Y
@@ -44,17 +48,20 @@ export const zoomedY = (number: number, zoom: Zoom) => {
 // and what is first become last and the other way round.
 
 // inverse function converts from screen pixel coord to world coord
+// tính toán lại vị trí chuột x so với thực tế sau khi bị translate và zoom xg
 export const zoomedX_INV = (number: number, zoom: Zoom) => {
   const { worldOrigin, screenOrigin, scale } = zoom;
   return (number - screenOrigin.x) / scale + worldOrigin.x;
 };
 
+// tính toán lại vị trí chuột y so với thực tế sau khi bị translate và zoom xg
 export const zoomedY_INV = (number: number, zoom: Zoom) => {
   const { worldOrigin, screenOrigin, scale } = zoom;
   return (number - screenOrigin.y) / scale + worldOrigin.y;
 };
 
 // converts from world coord to screen pixel coord
+// tính toán lại component
 export const makeScreen = (screen: ComponentApp) => {
   const { zoom } = screen;
   return {

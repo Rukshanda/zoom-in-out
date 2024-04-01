@@ -1,13 +1,12 @@
 import { ComponentApp } from "../types";
-import { makeScreen } from "../utlis";
 
 export const name = (
   ctx: CanvasRenderingContext2D,
   component: ComponentApp
 ) => {
-  const { width, x, y, name, title, config } = makeScreen(component);
+  const { width, x, y, name, title, config } = component;
   const { fontSize, initScale } = config;
-  let text = title || name;
+  let text = title || name; 
   if (!text) return;
   ctx.save();
   ctx.beginPath();

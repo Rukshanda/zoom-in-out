@@ -12,6 +12,7 @@ import {
   getConfig,
   getSize,
   isHoved,
+  makeScreen,
   zoomedX_INV,
   zoomedY_INV,
 } from "../utlis";
@@ -74,7 +75,7 @@ class Canvas<T> extends Component<CanvasProps<T>> {
       this.setSizeCanvas(nProps.windowSize);
       this.draw();
     }
-    return false;
+    return false; 
   }
 
   componentDidMount(): void {
@@ -170,15 +171,16 @@ class Canvas<T> extends Component<CanvasProps<T>> {
     const config = getConfig(this.props);
     components.forEach((component) => {
       if (!this.ctx) return;
-      const newComponent: ComponentApp = {
+      let newComponent: ComponentApp = {
         ...component,
         zoom: this.zoom,
         windowSize: { width, height },
-        cursor: {
-          inScreen: () => moved && isHoved(this.zoom.mouse, newComponent),
-        },
         config,
       } as unknown as ComponentApp;
+      newComponent = makeScreen(newComponent);
+      newComponent.cursor = {
+        inScreen: () => moved && isHoved(this.zoom.mouse, newComponent),
+      };
       page(this.ctx, newComponent);
     });
     framePixel(this.ctx, { windowSize, zoom: this.zoom, config });
