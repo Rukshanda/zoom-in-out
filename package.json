@@ -1,6 +1,6 @@
 {
-  "name": "@slick-slider/slick",
-  "version": "1.0.1",
+  "name": "canvas-circle",
+  "version": "0.1.0",
   "private": true,
   "dependencies": {
     "@slick-slider/slick": "^1.0.0",
