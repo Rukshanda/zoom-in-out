@@ -40,9 +40,12 @@ class Chart extends Component<Props> {
   private spaceX: number;
   private spaceY: number;
   private sizeBottom: number;
-  private interval?: number;
+  private interval: number;
   private process: number;
   private spaceLabelY: number;
+
+  private isAnimation: boolean;
+  private spaceAdd: number;
 
   constructor(props: Props) {
     super(props);
@@ -56,18 +59,56 @@ class Chart extends Component<Props> {
     this.spaceY = 0;
     this.spaceLabelY = 0;
     this.sizeBottom = 0;
+    this.spaceAdd = 0;
     this.process = 0;
     this.maxWidthLabelX = 0;
+    this.interval = 0;
+    this.isAnimation = true;
   }
 
   componentDidMount(): void {
+    this.mapData();
     this.config();
+    window.addEventListener("resize", this.resize);
   }
 
+  componentWillUnmount(): void {
+    window.removeEventListener("resize", this.resize);
+  }
+
+  resize = () => {
+    this.interval = 0;
+    this.isAnimation = false;
+    this.config();
+  };
+
   shouldComponentUpdate(nProps: Readonly<Props>): boolean {
-    const { style, className } = this.props;
+    const { style, className, data } = this.props;
+    if (data !== nProps.data) {
+      this.isAnimation = true;
+      this.mapData(nProps);
+      this.config(nProps);
+    }
     return style !== nProps.style || className !== nProps.className;
   }
+
+  private mapData = (props = this.props) => {
+    const { data } = props;
+    if (!data) return;
+    const { dataChart = [] } = data;
+    this.data1 = [];
+    this.data2 = [];
+    this.labelsX = [];
+    for (const data of dataChart) {
+      this.data1.push(data?.[1] || 0);
+      this.data2.push(data?.[2] || 0);
+      this.labelsX.push(data?.[0] || 0);
+    }
+    const list = [...this.data1, ...this.data2];
+    this.min = this.roundToNearest(Math.min(0, ...list));
+    const totalSize = Math.abs(this.min) + Math.abs(this.max);
+    this.spaceAdd = Math.round(totalSize / 10);
+  };
 
   private config = (props = this.props) => {
     const { data, gap = GAP } = props;
@@ -85,23 +126,8 @@ class Chart extends Component<Props> {
     this.ctx.globalAlpha = 1;
     this.ctx.shadowBlur = 0;
     //---------config ctx---------//
-
-    const { dataChart = [], labelsFamilyTotal = [] } = data;
-    this.data1 = [];
-    this.data2 = [];
-    this.labelsX = [];
-    this.labelsY = [];
-    for (const data of dataChart) {
-      this.data1.push(data?.[1] || 0);
-      this.data2.push(data?.[2] || 0);
-      this.labelsX.push(data?.[0] || 0);
-    }
-    const list = [...this.data1, ...this.data2];
-    this.min = this.roundToNearest(Math.min(0, ...list));
-    this.max = this.roundToNearest(Math.max(0, ...list));
-
-    const totalSize = Math.abs(this.min) + Math.abs(this.max);
-    const space = totalSize / 10;
+    this.max = this.roundToNearest(Math.max(0, ...this.data1, ...this.data2));
+    const { labelsFamilyTotal = [] } = data;
     const maxWL = Math.max(
       this.ctx.measureText(String(this.min)).width,
       this.ctx.measureText(String(this.max)).width,
@@ -113,17 +139,18 @@ class Chart extends Component<Props> {
     this.spaceX = (width - PADDING * 2 - maxWL - gap) / lengthX;
     this.spaceX -= this.spaceX / lengthX;
     let valueDraw = this.min;
+    this.labelsY = [];
     while (valueDraw < 0) {
       this.labelsY.push(valueDraw);
-      valueDraw += space;
+      valueDraw += this.spaceAdd;
     }
     valueDraw = 0;
-    const check = this.max > 0 ? this.max + space : this.max;
+    const check = this.max > 0 ? this.max + this.spaceAdd : this.max;
     while (valueDraw <= check) {
       this.labelsY.push(valueDraw);
-      valueDraw += space;
+      valueDraw += this.spaceAdd;
     }
-    if (this.max > 0) this.max = valueDraw - space;
+    if (this.max > 0) this.max = valueDraw - this.spaceAdd;
     this.animateValue(props, DURATION);
   };
 
@@ -152,6 +179,7 @@ class Chart extends Component<Props> {
       this.drawLabelX(props, i, x + GAP, y);
       y += FONT_SIZE + GAP_Y_LABEL;
     }
+    this.ctx.restore();
   };
 
   private drawY = (props = this.props) => {
@@ -260,13 +288,12 @@ class Chart extends Component<Props> {
       const widthLabel = this.ctx.measureText(label).width;
       if (
         (this.interval && i % this.interval === 0) ||
-        !w ||
-        widthLabel * 2 < w
+        (widthLabel + PADDING < w && !this.interval)
       ) {
         if (!this.interval) this.interval = i;
+        w = widthLabel;
         this.ctx.fillText(label, x, height - y);
-        w = this.spaceX;
-      } else w += widthLabel;
+      } else w += this.spaceX;
       if (!index) {
         if (!this.sizeBottom) {
           this.sizeBottom = height - (height - y - FONT_SIZE * SCALE);
@@ -311,7 +338,8 @@ class Chart extends Component<Props> {
     let startTime: number;
     const update = (time: number) => {
       if (!startTime) startTime = time;
-      const progress = Math.min(1, (time - startTime) / duration);
+      let progress = Math.min(1, (time - startTime) / duration);
+      if (!this.isAnimation) progress = 1;
       this.process = this.easeOutQuint(progress);
       if (progress < 1) {
         requestAnimationFrame(update);
