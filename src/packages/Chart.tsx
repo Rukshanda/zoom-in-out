@@ -24,7 +24,7 @@ const COLOR = "#555";
 const GAP_Y_LABEL = 6 * SCALE;
 const GAP = 20 * SCALE;
 const PADDING = 10 * SCALE;
-const DURATION = 2000;
+const DURATION = 1500;
 
 class Chart extends Component<Props> {
   private min: number;
@@ -84,12 +84,13 @@ class Chart extends Component<Props> {
 
   shouldComponentUpdate(nProps: Readonly<Props>): boolean {
     const { style, className, data } = this.props;
+    const bool = style !== nProps.style || className !== nProps.className;
+    this.isAnimation = true;
     if (data !== nProps.data) {
-      this.isAnimation = true;
       this.mapData(nProps);
       this.config(nProps);
-    }
-    return style !== nProps.style || className !== nProps.className;
+    } else if (bool) this.config(nProps);
+    return bool;
   }
 
   private mapData = (props = this.props) => {
@@ -106,8 +107,8 @@ class Chart extends Component<Props> {
     }
     const list = [...this.data1, ...this.data2];
     this.min = this.roundToNearest(Math.min(0, ...list));
-    const totalSize = Math.abs(this.min) + Math.abs(this.max);
-    this.spaceAdd = Math.round(totalSize / 10);
+    const maxx = Math.max(Math.abs(this.min), Math.abs(this.max));
+    this.spaceAdd = Math.round(maxx / 10);
   };
 
   private config = (props = this.props) => {
@@ -145,8 +146,8 @@ class Chart extends Component<Props> {
       valueDraw += this.spaceAdd;
     }
     valueDraw = 0;
-    const check = this.max > 0 ? this.max + this.spaceAdd : this.max;
-    while (valueDraw <= check) {
+    const maxData = Math.max(...this.data1, ...this.data2);
+    while (valueDraw <= this.max || valueDraw - this.spaceAdd < maxData) {
       this.labelsY.push(valueDraw);
       valueDraw += this.spaceAdd;
     }
@@ -226,7 +227,7 @@ class Chart extends Component<Props> {
     const length = Math.max(this.data1.length, this.data2.length);
     this.ctx.save();
     let x = PADDING + maxWlbX + gap + this.spaceX / 2;
-    const GAP_COLUMN = 0.1 * this.spaceX * SCALE;
+    const GAP_COLUMN = 0.1 * this.spaceX * 2;
     const size = this.spaceX - GAP_COLUMN * 2;
     for (let i = 0; i < length; i++) {
       const d1 = this.data1[i];
@@ -234,7 +235,8 @@ class Chart extends Component<Props> {
       if (d1) {
         this.ctx.fillStyle = d1 >= 0 ? "blue" : "red";
         const height = Math.abs(d1) * this.process * this.spaceY;
-        const heightY = d1 > 0 ? Math.abs(d1) * this.process * this.spaceY : 0;
+        const heightY =
+          d1 > 0 ? d1 * this.process * this.spaceY + FONT_SIZE / 2 : 0;
         this.ctx.fillRect(
           x + GAP_COLUMN,
           yBegin - heightY,
@@ -245,7 +247,14 @@ class Chart extends Component<Props> {
       if (d2) {
         this.ctx.fillStyle = d2 >= 0 ? "blue" : "red";
         const height = Math.abs(d2) * this.process * this.spaceY;
-        this.ctx.fillRect(x + GAP_COLUMN, yBegin, size, height + FONT_SIZE / 2);
+        const heightY =
+          d2 > 0 ? d2 * this.process * this.spaceY + FONT_SIZE / 2 : 0;
+        this.ctx.fillRect(
+          x + GAP_COLUMN,
+          yBegin - heightY,
+          size,
+          height + FONT_SIZE / 2
+        );
       }
       x += this.spaceX;
     }
@@ -295,12 +304,13 @@ class Chart extends Component<Props> {
         this.ctx.fillText(label, x, height - y);
       } else w += this.spaceX;
       if (!index) {
+        const size = FONT_SIZE + (FONT_SIZE / 2) * 2;
         if (!this.sizeBottom) {
-          this.sizeBottom = height - (height - y - FONT_SIZE * SCALE);
+          this.sizeBottom = height - (height - y - size);
         }
         this.ctx.beginPath();
-        this.ctx.moveTo(x + LINE_WIDTH / 2, height - y - FONT_SIZE * SCALE);
-        this.ctx.lineTo(x + LINE_WIDTH / 2, height - y - FONT_SIZE - 4 * SCALE);
+        this.ctx.moveTo(x + LINE_WIDTH / 2, height - y - size);
+        this.ctx.lineTo(x + LINE_WIDTH / 2, height - y - size + 8 * SCALE);
         this.ctx.stroke();
       }
       x += this.spaceX;
