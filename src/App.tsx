@@ -61,7 +61,11 @@ function App() {
         padding: 10,
       }}
     >
-      <Chart data={data} style={{ width: "100%", height: "100%" }} />
+      <Chart
+        data={data}
+        colorHover="gray"
+        style={{ width: "100%", height: "100%" }}
+      />
     </div>
   );
 }

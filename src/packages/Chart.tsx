@@ -1,4 +1,4 @@
-import { CSSProperties, Component } from "react";
+import { CSSProperties, Component, MouseEvent } from "react";
 
 export type Data = {
   assetBalanceAge65: number;
@@ -9,11 +9,27 @@ export type Data = {
   labelsFamilyTotal: string[];
 };
 
+type PointData = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  data: number;
+};
+
 type Props = {
   className?: string;
   style?: CSSProperties;
   data?: Data;
   gap?: number;
+  colors?: string[];
+  colorHover?: string;
+  tooltip?: (d: number[]) => JSX.Element;
+};
+
+type State = {
+  showTooltip: boolean;
+  reUpdate: boolean;
 };
 
 const FAMILY = "Noto Sans JP";
@@ -26,7 +42,7 @@ const GAP = 20 * SCALE;
 const PADDING = 10 * SCALE;
 const DURATION = 1500;
 
-class Chart extends Component<Props> {
+class Chart extends Component<Props, State> {
   private min: number;
   private max: number;
   private maxWidthLabelX: number;
@@ -35,7 +51,10 @@ class Chart extends Component<Props> {
   private data1: number[];
   private data2: number[];
   private refCanvas?: HTMLCanvasElement | null;
+  private refWrapCanvas?: HTMLDivElement | null;
   private ctx?: CanvasRenderingContext2D | null;
+  private points: PointData[] = [];
+  private pointsSelected: PointData[] = [];
 
   private spaceX: number;
   private spaceY: number;
@@ -46,6 +65,8 @@ class Chart extends Component<Props> {
 
   private isAnimation: boolean;
   private spaceAdd: number;
+  private timeout?: NodeJS.Timeout;
+  private contentTooltip?: HTMLDivElement | null;
 
   constructor(props: Props) {
     super(props);
@@ -64,6 +85,7 @@ class Chart extends Component<Props> {
     this.maxWidthLabelX = 0;
     this.interval = 0;
     this.isAnimation = true;
+    this.state = { showTooltip: false, reUpdate: false };
   }
 
   componentDidMount(): void {
@@ -82,15 +104,21 @@ class Chart extends Component<Props> {
     this.config();
   };
 
-  shouldComponentUpdate(nProps: Readonly<Props>): boolean {
+  shouldComponentUpdate(
+    nProps: Readonly<Props>,
+    nState: Readonly<State>
+  ): boolean {
     const { style, className, data } = this.props;
+    const { showTooltip, reUpdate } = this.state;
     const bool = style !== nProps.style || className !== nProps.className;
     this.isAnimation = true;
     if (data !== nProps.data) {
       this.mapData(nProps);
       this.config(nProps);
     } else if (bool) this.config(nProps);
-    return bool;
+    return (
+      bool || showTooltip !== nState.showTooltip || reUpdate !== nState.reUpdate
+    );
   }
 
   private mapData = (props = this.props) => {
@@ -218,7 +246,8 @@ class Chart extends Component<Props> {
 
   private drawData = (props = this.props) => {
     if (!this.ctx || !this.refCanvas) return;
-    const { gap = GAP } = props;
+    const { gap = GAP, colors = ["blue", "red"], colorHover } = props;
+    const { showTooltip } = this.state;
     const minY = PADDING;
     let index0 = this.labelsY.findIndex((e) => !e);
     index0 = this.labelsY.length - 1 - index0;
@@ -229,11 +258,19 @@ class Chart extends Component<Props> {
     let x = PADDING + maxWlbX + gap + this.spaceX / 2;
     const GAP_COLUMN = 0.1 * this.spaceX * 2;
     const size = this.spaceX - GAP_COLUMN * 2;
+    this.points = [];
     for (let i = 0; i < length; i++) {
       const d1 = this.data1[i];
       const d2 = this.data2[i];
       if (d1) {
-        this.ctx.fillStyle = d1 >= 0 ? "blue" : "red";
+        this.ctx.fillStyle = d1 >= 0 ? colors[0] : colors[1];
+        if (
+          colorHover &&
+          this.pointsSelected.find((e) => e.data === d1) &&
+          showTooltip
+        ) {
+          this.ctx.fillStyle = colorHover;
+        }
         const height = Math.abs(d1) * this.process * this.spaceY;
         const heightY =
           d1 > 0 ? d1 * this.process * this.spaceY + FONT_SIZE / 2 : 0;
@@ -243,9 +280,25 @@ class Chart extends Component<Props> {
           size,
           height + FONT_SIZE / 2
         );
+        if (this.process === 1) {
+          this.points.push({
+            x: x + GAP_COLUMN,
+            y: yBegin - heightY,
+            height: height + FONT_SIZE / 2,
+            width: size,
+            data: d1,
+          });
+        }
       }
       if (d2) {
-        this.ctx.fillStyle = d2 >= 0 ? "blue" : "red";
+        this.ctx.fillStyle = d2 >= 0 ? colors[0] : colors[1];
+        if (
+          colorHover &&
+          this.pointsSelected.find((e) => e.data === d1) &&
+          showTooltip
+        ) {
+          this.ctx.fillStyle = colorHover;
+        }
         const height = Math.abs(d2) * this.process * this.spaceY;
         const heightY =
           d2 > 0 ? d2 * this.process * this.spaceY + FONT_SIZE / 2 : 0;
@@ -255,6 +308,15 @@ class Chart extends Component<Props> {
           size,
           height + FONT_SIZE / 2
         );
+        if (this.process === 1) {
+          this.points.push({
+            x: x + GAP_COLUMN,
+            y: yBegin - heightY,
+            height: height + FONT_SIZE / 2,
+            width: size,
+            data: d2,
+          });
+        }
       }
       x += this.spaceX;
     }
@@ -319,6 +381,36 @@ class Chart extends Component<Props> {
     this.ctx.restore();
   };
 
+  private onMouseMove = (event: MouseEvent) => {
+    if (!this.refCanvas) return;
+    const { x, y } = this.refCanvas.getBoundingClientRect();
+    const xMouse = (event.pageX - x) * SCALE;
+    const yMouse = (event.pageY - y) * SCALE;
+    const selecteds = this.points.filter((d) => {
+      return (
+        xMouse >= d.x &&
+        xMouse <= d.x + d.width &&
+        yMouse >= d.y &&
+        yMouse <= d.y + d.height
+      );
+    });
+
+    if (selecteds.length) this.pointsSelected = selecteds;
+    const { showTooltip, reUpdate } = this.state;
+    let newShow = !!selecteds.length;
+    clearTimeout(this.timeout);
+    if (showTooltip && !selecteds.length) {
+      this.timeout = setTimeout(() => {
+        this.setState({ showTooltip: false }, this.drawData);
+      }, 200);
+    } else {
+      this.setState(
+        { showTooltip: newShow, reUpdate: !reUpdate },
+        this.drawData
+      );
+    }
+  };
+
   private getSize = () => {
     if (!this.refCanvas) return { width: 0, height: 0 };
     const { width: w, height: h } = this.refCanvas.getBoundingClientRect();
@@ -359,14 +451,47 @@ class Chart extends Component<Props> {
     requestAnimationFrame(update);
   };
 
+  private getPositionTooltip = (d: PointData) => {
+    if (!this.refCanvas || !d || !this.contentTooltip) {
+      return { left: undefined, top: undefined };
+    }
+    const { x, y, width } = this.refCanvas.getBoundingClientRect();
+    const { width: w } = this.contentTooltip.getBoundingClientRect();
+    let left: number | undefined = d.x / SCALE + x;
+    if (d.x / SCALE > width / 2) {
+      left = left - w;
+    }
+    return { left, top: (d.y + d.height / 4) / SCALE + y };
+  };
+
   render() {
-    const { className, style } = this.props;
+    const { className, style, tooltip } = this.props;
+    const { showTooltip } = this.state;
+
     return (
-      <canvas
-        className={className}
-        style={style}
-        ref={(ref) => (this.refCanvas = ref)}
-      />
+      <div
+        ref={(ref) => (this.refWrapCanvas = ref)}
+        style={{ ...style, position: "relative" }}
+        onMouseMove={this.onMouseMove}
+        onMouseLeave={() => this.setState({ showTooltip: false })}
+      >
+        <canvas
+          className={className}
+          style={style}
+          ref={(ref) => (this.refCanvas = ref)}
+        />
+        <div
+          style={{
+            position: "absolute",
+            ...this.getPositionTooltip(this.pointsSelected[0]),
+            opacity: Number(showTooltip),
+            transition: "all 0.3s",
+          }}
+          ref={(ref) => (this.contentTooltip = ref)}
+        >
+          {tooltip?.(this.pointsSelected.map((e) => e.data))}
+        </div>
+      </div>
     );
   }
 }
