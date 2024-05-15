@@ -3,6 +3,7 @@ import { CSSProperties, Component } from "react";
 type Props<T> = {
   images: T[];
   onClick?: (image: T) => void;
+  onNext?: (image: T, index: number) => void;
   urlExtractor: (image: T) => string;
   keyExtractor?: (image: T) => string;
   styleImg?: CSSProperties;
@@ -42,6 +43,9 @@ class Slick<T> extends Component<Props<T>> {
   }
 
   shouldComponentUpdate(nextProps: Readonly<Props<T>>): boolean {
+    if (nextProps.loop !== this.props.loop) {
+      this.addLoop(nextProps);
+    }
     if (nextProps.images.length !== this.props.images.length) {
       this.i = 1;
       this.mouse = {};
@@ -57,14 +61,15 @@ class Slick<T> extends Component<Props<T>> {
     window.removeEventListener("resize", this.resize);
   }
 
-  private addLoop = () => {
+  private addLoop = (props = this.props) => {
     clearInterval(this.interval);
     const {
       durationAutoPlay = 4000,
       durationAnimation = 300,
       images = [],
       loop = true,
-    } = this.props;
+      onNext,
+    } = props;
     if (!loop) return;
     this.interval = setInterval(() => {
       this.allowMove = false;
@@ -78,6 +83,7 @@ class Slick<T> extends Component<Props<T>> {
         } else if (this.i === 0) {
           this.i = images.length;
         }
+        onNext?.(images[this.i - 1], this.i - 1);
         this.allowMove = true;
         this.mouse = {};
         this.translate();
