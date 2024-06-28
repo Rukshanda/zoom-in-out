@@ -33,7 +33,7 @@
 
 ```js
 import { Fragment, useRef, useState } from "react";
-import ScrollInverted from "./packages/ScrollInverted";
+import ScrollInverted from "@react-scroll-inverted/react-scroll";
 
 function App() {
   const [state1, setState1] = useState(

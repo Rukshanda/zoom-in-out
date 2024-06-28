@@ -260,17 +260,20 @@ class ScrollInverted<T> extends PureComponent<ScrollInvertedProps<T>> {
   scrollTo = (options: ScrollToOptions) => {
     if (!this.divScroll) return;
     this.divScroll.scrollTo(options);
+    this.beginFrameAnimated();
   };
 
   scrollToEnd = (behavior?: ScrollBehavior) => {
     if (!this.divScroll) return;
     this.divScroll.scrollTo({ top: 0, behavior });
+    this.beginFrameAnimated();
   };
 
   scrollToTop = (behavior?: ScrollBehavior) => {
     if (!this.divScroll) return;
     const { scrollHeight } = this.divScroll;
     this.divScroll.scrollTo({ top: scrollHeight, behavior });
+    this.beginFrameAnimated();
   };
 
   private getReverse = () => {
