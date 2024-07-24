@@ -278,7 +278,7 @@ class PDFHighlight extends Component<Props> {
     await renderTask.promise;
     if (pageSearch && pageSearch !== page) return;
     const promiseAll = keywords.map(async (keyword) => {
-      if (keyword.length > 2000) {
+      if (keyword.length > 10000) {
         console.warn("Keywords are too big: " + keyword.length + " characters");
       }
       return this.hightlightText(
